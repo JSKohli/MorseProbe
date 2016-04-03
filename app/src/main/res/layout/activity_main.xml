@@ -35,7 +35,8 @@
             android:layout_marginTop="20px"
             android:textSize="20dp"
             android:padding="20dp"
-            android:text="Enter Text Here"
+            android:hint="Enter Text Here"
+            android:textColorHint="#6A6A68"
             />
 
         <Button
