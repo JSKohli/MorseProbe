@@ -86,5 +86,18 @@
             android:paddingLeft="10dp"
             android:paddingRight="10dp"
             android:layout_marginTop="20dp"/>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Play Beep"
+            android:id="@+id/button3"
+            android:background="#B7A85C"
+            android:textColor="#151515"
+            android:textSize="14dp"
+            android:layout_gravity="center"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:layout_marginTop="20dp"/>
     </LinearLayout>
 </RelativeLayout>

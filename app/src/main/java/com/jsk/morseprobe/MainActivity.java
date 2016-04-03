@@ -4,6 +4,7 @@ import android.app.ActionBar;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.media.MediaPlayer;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -22,6 +23,7 @@ import java.util.Map;
 public class MainActivity extends AppCompatActivity {
 
     private static Camera camera;
+    private MediaPlayer mediaPlayer;
     private Parameters params;
     private boolean threadAlive=false;
 
@@ -162,8 +164,10 @@ public class MainActivity extends AppCompatActivity {
 
         Button generateCodeButton = (Button) findViewById(R.id.button);
         Button flashCodeButton = (Button) findViewById(R.id.button2);
+        Button playBeep = (Button) findViewById(R.id.button3);
         final EditText editText = (EditText) findViewById(R.id.message);
         final TextView codedTextView = (TextView) findViewById(R.id.codedMessage);
+        mediaPlayer = MediaPlayer.create(this,R.raw.beep);
 
         generateCodeButton.setOnClickListener(
                 new View.OnClickListener() {
@@ -214,6 +218,15 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
+
+        playBeep.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        mediaPlayer.start();
+                    }
+                }
+        );
     }
 
     @Override
@@ -224,6 +237,11 @@ public class MainActivity extends AppCompatActivity {
             camera.stopPreview();
             camera.release();
             camera=null;
+        }
+
+        if(mediaPlayer !=null) {
+            mediaPlayer.release();
+            mediaPlayer=null;
         }
     }
 }
