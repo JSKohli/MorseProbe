@@ -65,8 +65,12 @@ public class MainActivity extends AppCompatActivity {
         for(int i=0; i<message.length(); i++){
             // could throw an exception here for any other characters
             // needs to be amended
-            codedMessage.append(morseCode.get(message.charAt(i)));
-            codedMessage.append(" ");
+            String val= morseCode.get(message.charAt(i));
+            if(val != null) {
+                codedMessage.append(val);
+                codedMessage.append(" ");
+            }
+            else return null;
         }
 
         return codedMessage.toString();
@@ -87,11 +91,13 @@ public class MainActivity extends AppCompatActivity {
                     public void onClick(View v) {
                         String message = editText.getText().toString();
                         String codedMessage = generateCode(message);
-                        codedTextView.setText(codedMessage);
-                        /**
-                         * needs to print error message if exception is thrown
-                         */
-                        Toast.makeText(MainActivity.this, "Morse code generated!", Toast.LENGTH_SHORT).show();
+                        if(codedMessage != null) {
+                            Toast.makeText(MainActivity.this, "Morse code generated!", Toast.LENGTH_SHORT).show();
+                            codedTextView.setText(codedMessage);
+                        }
+                        else {
+                            Toast.makeText(MainActivity.this, "ERROR: message must contain only characters (A-Z) and numbers(0-9)", Toast.LENGTH_LONG).show();
+                        }
                     }
                 }
         );
