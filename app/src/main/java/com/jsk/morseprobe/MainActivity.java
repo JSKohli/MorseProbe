@@ -1,6 +1,8 @@
 package com.jsk.morseprobe;
 
 import android.app.ActionBar;
+import android.app.Activity;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -9,6 +11,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -28,15 +31,16 @@ public class MainActivity extends AppCompatActivity {
     private MediaPlayer mediaPlayer;
     private Parameters params;
     private boolean threadAlive=false;
+    Map<Character,String> morseCode;
 
-    protected String generateCode(String message){
-        Map<Character,String> morseCode = new HashMap<Character,String>();
+    public MainActivity(){
+        morseCode = new HashMap<Character,String>();
         morseCode.put('A', "·—");
         morseCode.put('B', "—···");
         morseCode.put('C',"—·—·");
         morseCode.put('D',"—··");
         morseCode.put('E',"·");
-        morseCode.put('F',"··—.");
+        morseCode.put('F',"··—·");
         morseCode.put('G',"——·");
         morseCode.put('H',"····");
         morseCode.put('I',"··");
@@ -69,7 +73,9 @@ public class MainActivity extends AppCompatActivity {
         morseCode.put('9',"————·");
         morseCode.put('0',"—————");
         morseCode.put(' ',"  ");
+    }
 
+    protected String generateCode(String message){
         message = message.toUpperCase();
 
         StringBuilder codedMessage= new StringBuilder("");
@@ -220,6 +226,21 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * NOTE: Copied from stackoverflow
+     * @param activity
+     */
+    public static void hideKeyboard(Activity activity) {
+        InputMethodManager imm = (InputMethodManager) activity.getSystemService(Activity.INPUT_METHOD_SERVICE);
+        //Find the currently focused view, so we can grab the correct window token from it.
+        View view = activity.getCurrentFocus();
+        //If no view currently has focus, create a new one, just so we can grab a window token from it
+        if (view == null) {
+            view = new View(activity);
+        }
+        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -236,14 +257,24 @@ public class MainActivity extends AppCompatActivity {
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
+
+                        //hide keyboard
+                        hideKeyboard(MainActivity.this);
+
                         String message = editText.getText().toString();
-                        String codedMessage = generateCode(message);
-                        if(codedMessage != null) {
-                            Toast.makeText(MainActivity.this, "Morse code generated!", Toast.LENGTH_SHORT).show();
-                            codedTextView.setText(codedMessage);
+                        if(message.length()==0) {
+                            Toast.makeText(MainActivity.this,"No value entered!",Toast.LENGTH_SHORT).show();
+                            codedTextView.setText("");
                         }
                         else {
-                            Toast.makeText(MainActivity.this, "ERROR: message must contain only characters (A-Z) and numbers(0-9)", Toast.LENGTH_LONG).show();
+                            String codedMessage = generateCode(message);
+                            if (codedMessage != null) {
+                                Toast.makeText(MainActivity.this, "Morse code generated!", Toast.LENGTH_SHORT).show();
+                                codedTextView.setText(codedMessage);
+                            } else {
+                                Toast.makeText(MainActivity.this, "ERROR: message must contain only characters (A-Z) and numbers(0-9)", Toast.LENGTH_LONG).show();
+                                codedTextView.setText("");
+                            }
                         }
                     }
                 }
@@ -254,20 +285,24 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onClick(View v) {
 
+                        // hides keyboard
+                        hideKeyboard(MainActivity.this);
+
                         boolean hasFlash = getApplicationContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
                         if(hasFlash == false) {
-                            Toast.makeText(MainActivity.this, "ERROR: Your device does not support flash!", Toast.LENGTH_LONG).show();
+                            Toast.makeText(MainActivity.this, "ERROR: Your device does not support flash!", Toast.LENGTH_SHORT).show();
                             return;
                         }
                         else {
                             if(!getCamera()) {
-                                Toast.makeText(MainActivity.this, "ERROR: Couldn't open camera!", Toast.LENGTH_LONG).show();
+                                Toast.makeText(MainActivity.this, "ERROR: Couldn't open camera!", Toast.LENGTH_SHORT).show();
                                 return;
                             }
                             else {
                                 String message = editText.getText().toString();
-                                if(message==null) {
+                                if(message.length()==0) {
                                     Toast.makeText(MainActivity.this,"No value entered!",Toast.LENGTH_SHORT).show();
+                                    codedTextView.setText("");
                                 }
                                 else {
                                     String codedMessage = generateCode(message);
@@ -278,6 +313,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     } else {
                                         Toast.makeText(MainActivity.this, "ERROR: message must contain only characters (A-Z) and numbers(0-9)", Toast.LENGTH_LONG).show();
+                                        codedTextView.setText("");
                                     }
                                 }
                             }
@@ -290,9 +326,14 @@ public class MainActivity extends AppCompatActivity {
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
+
+                        //hides keyboard
+                        hideKeyboard(MainActivity.this);
+
                         String message = editText.getText().toString();
-                        if(message==null) {
+                        if(message.length()==0) {
                             Toast.makeText(MainActivity.this,"No value entered!",Toast.LENGTH_SHORT).show();
+                            codedTextView.setText("");
                         }
                         else {
                             String codedMessage = generateCode(message);
@@ -302,6 +343,7 @@ public class MainActivity extends AppCompatActivity {
                                 playMessage(codedMessage);
                             } else {
                                 Toast.makeText(MainActivity.this, "ERROR: message must contain only characters (A-Z) and numbers(0-9)", Toast.LENGTH_LONG).show();
+                                codedTextView.setText("");
                             }
                         }
                     }
