@@ -3,10 +3,12 @@ package com.jsk.morseprobe;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -248,10 +250,11 @@ public class MainActivity extends AppCompatActivity {
 
         Button generateCodeButton = (Button) findViewById(R.id.button);
         Button flashCodeButton = (Button) findViewById(R.id.button2);
-        final Button playBeep = (Button) findViewById(R.id.button3);
+        Button playBeepButton = (Button) findViewById(R.id.button3);
+        Button sendMessageButton = (Button) findViewById(R.id.button4);
+        Button clearButton = (Button) findViewById(R.id.button5);
         final EditText editText = (EditText) findViewById(R.id.message);
         final TextView codedTextView = (TextView) findViewById(R.id.codedMessage);
-
 
         generateCodeButton.setOnClickListener(
                 new View.OnClickListener() {
@@ -322,7 +325,7 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
 
-        playBeep.setOnClickListener(
+        playBeepButton.setOnClickListener(
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
@@ -349,7 +352,45 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
+
+        sendMessageButton.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        String message = editText.getText().toString();
+                        if(message.length() == 0) {
+                            Toast.makeText(MainActivity.this, "No value entered!", Toast.LENGTH_SHORT).show();
+                            codedTextView.setText("");
+                        }
+                        else {
+                            String codedMessage = generateCode(message);
+                            if (codedMessage != null) {
+                                codedTextView.setText(codedMessage);
+                                Uri uri = Uri.parse("smsto:");
+                                Intent intent = new Intent(Intent.ACTION_SENDTO, uri);
+                                intent.putExtra("sms_body", codedMessage);
+                                startActivity(intent);
+                            } else {
+                                Toast.makeText(MainActivity.this, "ERROR: message must contain only characters (A-Z) and numbers(0-9)", Toast.LENGTH_LONG).show();
+                                codedTextView.setText("");
+                            }
+                        }
+                    }
+                }
+        );
+
+        clearButton.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        editText.setText("");
+                        codedTextView.setText("");
+                    }
+                }
+        );
     }
+
+
 
     @Override
     protected void onStop() {
