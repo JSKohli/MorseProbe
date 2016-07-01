@@ -29,11 +29,15 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static Camera camera;
-    private MediaPlayer mediaPlayer;
-    private Parameters params;
-    private boolean threadAlive=false;
-    Map<Character,String> morseCode;
+    private static Camera camera;               //to use flashlight for transmitting morse code
+    private MediaPlayer mediaPlayer;            //to use beep sounds for transmitting morse code
+    private Parameters params;                  //sets camera parameters
+    private volatile boolean musicThreadAlive=false;            // to Async the task of playing sound
+    private volatile boolean lightThreadAlive=false;            // to Async the task of flashing lights
+    Thread musicThread;                                         //shouldn't block the UI thread
+    Thread lightThread;                                         //shouldn't block the UI thread
+
+    Map<Character,String> morseCode;            //this map will map each alphanumeric character to its morseCode
 
     public MainActivity(){
         morseCode = new HashMap<Character,String>();
@@ -77,24 +81,40 @@ public class MainActivity extends AppCompatActivity {
         morseCode.put(' ',"  ");
     }
 
+    /**
+     * This method takes an alphanumeric message as input
+     * and returns its morse code in the form of UTF characters.
+     * @param message
+     * @return
+     */
     protected String generateCode(String message){
+        //change all characters to upper case to make the function case insensitive
         message = message.toUpperCase();
 
+        // initializes the code with an empty string.
         StringBuilder codedMessage= new StringBuilder("");
 
+        // loops through the message character by character and maps
+        // it to its morse code character.
         for(int i=0; i<message.length(); i++){
-            // returns null for any characters other than (a-z 0-9)
+            // returns null for any characters other than (a-z, 0-9, and ' ')
             String val= morseCode.get(message.charAt(i));
             if(val != null) {
                 codedMessage.append(val);
                 codedMessage.append(" ");
             }
-            else return null;
+            else return null;           //return a null if any unacceptabe character is found.
         }
 
         return codedMessage.toString();
     }
 
+    /**
+     * This method checks to see if the phone has a camera or not
+     * or if the camera is being used by any other app or not.
+     * If the camera resource was initiated then it returns a true else false.
+     * @return
+     */
     private boolean getCamera() {
         if(camera == null) {
             try {
@@ -111,69 +131,83 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void flashMessage(final String message) {
-        threadAlive=true;
-        Thread t = new Thread(new Runnable() {
+        if(musicThread != null) {
+            musicThreadAlive=false;
+            musicThread.interrupt();
+            musicThread=null;
+        }
+        lightThreadAlive=true;
+        lightThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                for(int i=0; i<message.length(); i++) {
-                    switch(message.charAt(i)) {
-                        case '·':
-                            params.setFlashMode(Parameters.FLASH_MODE_TORCH);
-                            camera.setParameters(params);
-                            camera.startPreview();
-                            try {
-                                Thread.sleep(100);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            params.setFlashMode(Parameters.FLASH_MODE_OFF);
-                            camera.setParameters(params);
-                            camera.startPreview();
-                            break;
-                        case '—':
-                            params.setFlashMode(Parameters.FLASH_MODE_TORCH);
-                            camera.setParameters(params);
-                            camera.startPreview();
-                            try {
-                                Thread.sleep(300);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            params.setFlashMode(Parameters.FLASH_MODE_OFF);
-                            camera.setParameters(params);
-                            camera.startPreview();
-                            break;
-                        case ' ':
-                            try {
-                                Thread.sleep(100);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            break;
-                    }
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+            for(int i=0; i<message.length() && lightThreadAlive; i++) {
+                switch(message.charAt(i)) {
+                    case '·':
+                        params.setFlashMode(Parameters.FLASH_MODE_TORCH);
+                        camera.setParameters(params);
+                        camera.startPreview();
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        params.setFlashMode(Parameters.FLASH_MODE_OFF);
+                        camera.setParameters(params);
+                        camera.startPreview();
+                        break;
+                    case '—':
+                        params.setFlashMode(Parameters.FLASH_MODE_TORCH);
+                        camera.setParameters(params);
+                        camera.startPreview();
+                        try {
+                            Thread.sleep(300);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        params.setFlashMode(Parameters.FLASH_MODE_OFF);
+                        camera.setParameters(params);
+                        camera.startPreview();
+                        break;
+                    case ' ':
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        break;
                 }
-                threadAlive=false;
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            lightThreadAlive=false;
             }
         });
-        t.start();
-        if(!threadAlive) {
-            t.interrupt();
-            t = null;
+        lightThread.start();
+
+        // this is different from the playSound() 'if' because
+        // this case runs when the thread runs till its termination
+        // and is not interrupted by musicThread
+        if(lightThread != null) {
+            lightThread.interrupt();
+            lightThread = null;
         }
     }
 
     public void playMessage(final String message) {
         mediaPlayer = MediaPlayer.create(this,R.raw.beep);
-        threadAlive=true;
-        Thread t= new Thread(new Runnable() {
+        if(lightThread != null) {
+            lightThreadAlive=false;
+            lightThread.interrupt();
+            lightThread=null;
+        }
+        lightThreadAlive=true;
+        musicThread= new Thread(new Runnable() {
             @Override
             public void run() {
-                for(int i=0; i<message.length(); i++) {
+                for(int i=0; i<message.length() && musicThreadAlive; i++) {
                     switch(message.charAt(i)) {
                         case '·':
                             mediaPlayer.start();
@@ -217,19 +251,23 @@ public class MainActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                 }
-                threadAlive=false;
+                musicThreadAlive=false;
             }
         });
 
-        t.start();
-        if(!threadAlive) {
-            t.interrupt();
-            t=null;
+        // this is different from the playSound() 'if' because
+        // this case runs when the thread runs till its termination
+        // and is not interrupted by musicThread
+        musicThread.start();
+        if(musicThread != null) {
+            musicThread.interrupt();
+            musicThread=null;
         }
     }
 
     /**
      * NOTE: Copied from stackoverflow
+     * this method hides keyboard when called.
      * @param activity
      */
     public static void hideKeyboard(Activity activity) {
@@ -390,8 +428,11 @@ public class MainActivity extends AppCompatActivity {
         );
     }
 
-
-
+    /**
+     * To release camera and media player resources
+     * When app is stopped. Otherwise ither apps will
+     * not be able to utilize them.
+     */
     @Override
     protected void onStop() {
         super.onStop();
