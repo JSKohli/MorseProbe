@@ -1,12 +1,8 @@
 package com.jsk.morseprobe;
 
-import android.app.ActionBar;
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
@@ -21,9 +17,6 @@ import android.widget.Toast;
 import android.hardware.Camera;
 
 import android.hardware.Camera.Parameters;
-import android.os.Handler;
-
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,8 +25,8 @@ public class MainActivity extends AppCompatActivity {
     private static Camera camera;               //to use flashlight for transmitting morse code
     private MediaPlayer mediaPlayer;            //to use beep sounds for transmitting morse code
     private Parameters params;                  //sets camera parameters
-    private volatile boolean musicThreadAlive=false;            // to Async the task of playing sound
-    private volatile boolean lightThreadAlive=false;            // to Async the task of flashing lights
+    //private volatile boolean musicThreadAlive=false;            // to Async the task of playing sound
+    //private volatile boolean lightThreadAlive=false;            // to Async the task of flashing lights
     Thread musicThread;                                         //shouldn't block the UI thread
     Thread lightThread;                                         //shouldn't block the UI thread
 
@@ -132,57 +125,58 @@ public class MainActivity extends AppCompatActivity {
 
     private void flashMessage(final String message) {
         if(musicThread != null) {
-            musicThreadAlive=false;
+            //musicThreadAlive=false;
             musicThread.interrupt();
             musicThread=null;
         }
-        lightThreadAlive=true;
+        //lightThreadAlive=true;
         lightThread = new Thread(new Runnable() {
             @Override
             public void run() {
-            for(int i=0; i<message.length() && lightThreadAlive; i++) {
-                switch(message.charAt(i)) {
-                    case '·':
-                        params.setFlashMode(Parameters.FLASH_MODE_TORCH);
-                        camera.setParameters(params);
-                        camera.startPreview();
-                        try {
-                            Thread.sleep(100);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        params.setFlashMode(Parameters.FLASH_MODE_OFF);
-                        camera.setParameters(params);
-                        camera.startPreview();
-                        break;
-                    case '—':
-                        params.setFlashMode(Parameters.FLASH_MODE_TORCH);
-                        camera.setParameters(params);
-                        camera.startPreview();
-                        try {
-                            Thread.sleep(300);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        params.setFlashMode(Parameters.FLASH_MODE_OFF);
-                        camera.setParameters(params);
-                        camera.startPreview();
-                        break;
-                    case ' ':
-                        try {
-                            Thread.sleep(100);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        break;
+                for(int i=0; i<message.length() && !lightThread.isInterrupted(); i++) {
+                    switch(message.charAt(i)) {
+                        case '·':
+                            params.setFlashMode(Parameters.FLASH_MODE_TORCH);
+                            camera.setParameters(params);
+                            camera.startPreview();
+                            try {
+                                Thread.sleep(100);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            params.setFlashMode(Parameters.FLASH_MODE_OFF);
+                            camera.setParameters(params);
+                            camera.startPreview();
+                            break;
+                        case '—':
+                            params.setFlashMode(Parameters.FLASH_MODE_TORCH);
+                            camera.setParameters(params);
+                            camera.startPreview();
+                            try {
+                                Thread.sleep(300);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            params.setFlashMode(Parameters.FLASH_MODE_OFF);
+                            camera.setParameters(params);
+                            camera.startPreview();
+                            break;
+                        case ' ':
+                            try {
+                                Thread.sleep(100);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            break;
+                    }
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            lightThreadAlive=false;
+                lightThread.interrupt();
+                //lightThreadAlive=false;
             }
         });
         lightThread.start();
@@ -191,6 +185,7 @@ public class MainActivity extends AppCompatActivity {
         // this case runs when the thread runs till its termination
         // and is not interrupted by musicThread
         if(lightThread != null) {
+            //lightThreadAlive = false;
             lightThread.interrupt();
             lightThread = null;
         }
@@ -199,15 +194,15 @@ public class MainActivity extends AppCompatActivity {
     public void playMessage(final String message) {
         mediaPlayer = MediaPlayer.create(this,R.raw.beep);
         if(lightThread != null) {
-            lightThreadAlive=false;
+            //lightThreadAlive=false;
             lightThread.interrupt();
             lightThread=null;
         }
-        lightThreadAlive=true;
+        //musicThreadAlive=true;
         musicThread= new Thread(new Runnable() {
             @Override
             public void run() {
-                for(int i=0; i<message.length() && musicThreadAlive; i++) {
+                for(int i=0; i<message.length() && !musicThread.isInterrupted(); i++) {
                     switch(message.charAt(i)) {
                         case '·':
                             mediaPlayer.start();
@@ -251,7 +246,8 @@ public class MainActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                 }
-                musicThreadAlive=false;
+                musicThread.interrupt();
+                //musicThreadAlive=false;
             }
         });
 
