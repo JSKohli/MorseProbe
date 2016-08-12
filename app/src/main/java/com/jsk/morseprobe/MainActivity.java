@@ -25,10 +25,8 @@ public class MainActivity extends AppCompatActivity {
     private static Camera camera;               //to use flashlight for transmitting morse code
     private MediaPlayer mediaPlayer;            //to use beep sounds for transmitting morse code
     private Parameters params;                  //sets camera parameters
-    //private volatile boolean musicThreadAlive=false;            // to Async the task of playing sound
-    //private volatile boolean lightThreadAlive=false;            // to Async the task of flashing lights
-    Thread musicThread;                                         //shouldn't block the UI thread
-    Thread lightThread;                                         //shouldn't block the UI thread
+    Thread musicThread;                         //shouldn't block the UI thread
+    Thread lightThread;                         //shouldn't block the UI thread
 
     Map<Character,String> morseCode;            //this map will map each alphanumeric character to its morseCode
 
@@ -85,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
         message = message.toUpperCase();
 
         // initializes the code with an empty string.
-        StringBuilder codedMessage= new StringBuilder("");
+        StringBuilder codedMessage= new StringBuilder();
 
         // loops through the message character by character and maps
         // it to its morse code character.
@@ -125,37 +123,42 @@ public class MainActivity extends AppCompatActivity {
 
     private void flashMessage(final String message) {
         if(musicThread != null) {
-            //musicThreadAlive=false;
             musicThread.interrupt();
             musicThread=null;
         }
-        //lightThreadAlive=true;
         lightThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                for(int i=0; i<message.length() && !lightThread.isInterrupted(); i++) {
+                for(int i=0; i<message.length() && !lightThread.interrupted(); i++) {
+                    // if the flashing thread is interrupted then close flash and return
                     switch(message.charAt(i)) {
                         case '·':
-                            params.setFlashMode(Parameters.FLASH_MODE_TORCH);
-                            camera.setParameters(params);
-                            camera.startPreview();
                             try {
+                                params.setFlashMode(Parameters.FLASH_MODE_TORCH);
+                                camera.setParameters(params);
+                                camera.startPreview();
                                 Thread.sleep(100);
                             } catch (InterruptedException e) {
-                                e.printStackTrace();
+                                params.setFlashMode(Parameters.FLASH_MODE_OFF);
+                                camera.setParameters(params);
+                                camera.startPreview();
+                                return;
                             }
                             params.setFlashMode(Parameters.FLASH_MODE_OFF);
                             camera.setParameters(params);
                             camera.startPreview();
                             break;
                         case '—':
-                            params.setFlashMode(Parameters.FLASH_MODE_TORCH);
-                            camera.setParameters(params);
-                            camera.startPreview();
                             try {
+                                params.setFlashMode(Parameters.FLASH_MODE_TORCH);
+                                camera.setParameters(params);
+                                camera.startPreview();
                                 Thread.sleep(300);
                             } catch (InterruptedException e) {
-                                e.printStackTrace();
+                                params.setFlashMode(Parameters.FLASH_MODE_OFF);
+                                camera.setParameters(params);
+                                camera.startPreview();
+                                return;
                             }
                             params.setFlashMode(Parameters.FLASH_MODE_OFF);
                             camera.setParameters(params);
@@ -165,66 +168,82 @@ public class MainActivity extends AppCompatActivity {
                             try {
                                 Thread.sleep(100);
                             } catch (InterruptedException e) {
-                                e.printStackTrace();
+                                params.setFlashMode(Parameters.FLASH_MODE_OFF);
+                                camera.setParameters(params);
+                                camera.startPreview();
+                                return;
                             }
                             break;
                     }
                     try {
                         Thread.sleep(100);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        params.setFlashMode(Parameters.FLASH_MODE_OFF);
+                        camera.setParameters(params);
+                        camera.startPreview();
+                        return;
                     }
                 }
-                lightThread.interrupt();
-                //lightThreadAlive=false;
             }
         });
+
         lightThread.start();
 
-        // this is different from the playSound() 'if' because
-        // this case runs when the thread runs till its termination
-        // and is not interrupted by musicThread
-        if(lightThread != null) {
-            //lightThreadAlive = false;
-            lightThread.interrupt();
-            lightThread = null;
-        }
+//         <when thread ends, it becomes dead and garbage collector collects it anything below this is not needed>
+//         this is different from the playSound() 'if' because
+//         this case runs when the thread runs till its termination
+//         and is not interrupted by musicThread
+//        if(lightThread != null) {
+//            lightThreadAlive = false;
+//            lightThread.interrupt();
+//            lightThread = null;
+//        }
     }
 
     public void playMessage(final String message) {
         mediaPlayer = MediaPlayer.create(this,R.raw.beep);
         if(lightThread != null) {
-            //lightThreadAlive=false;
             lightThread.interrupt();
             lightThread=null;
         }
-        //musicThreadAlive=true;
+
         musicThread= new Thread(new Runnable() {
             @Override
             public void run() {
-                for(int i=0; i<message.length() && !musicThread.isInterrupted(); i++) {
+                // if at any point the music thread is interrupted and the sound is playing, then pause and return.
+                for(int i=0; i<message.length() && !musicThread.interrupted(); i++) {
                     switch(message.charAt(i)) {
                         case '·':
-                            mediaPlayer.start();
                             try {
+                                mediaPlayer.seekTo(100);
+                                mediaPlayer.start();
                                 Thread.sleep(100);
                             } catch (InterruptedException e) {
-                                e.printStackTrace();
+                                if(mediaPlayer.isPlaying()) {
+                                    mediaPlayer.seekTo(100);
+                                    mediaPlayer.pause();
+                                }
+                                return;
                             }
                             if(mediaPlayer.isPlaying()) {
-                                mediaPlayer.seekTo(0);
+                                mediaPlayer.seekTo(100);
                                 mediaPlayer.pause();
                             }
                             break;
                         case '—':
-                            mediaPlayer.start();
                             try {
+                                mediaPlayer.seekTo(100);
+                                mediaPlayer.start();
                                 Thread.sleep(300);
                             } catch (InterruptedException e) {
-                                e.printStackTrace();
+                                if(mediaPlayer.isPlaying()) {
+                                    mediaPlayer.seekTo(100);
+                                    mediaPlayer.pause();
+                                }
+                                return;
                             }
                             if(mediaPlayer.isPlaying()) {
-                                mediaPlayer.seekTo(0);
+                                mediaPlayer.seekTo(100);
                                 mediaPlayer.pause();
                             }
                             break;
@@ -232,37 +251,41 @@ public class MainActivity extends AppCompatActivity {
                             try {
                                 Thread.sleep(100);
                             } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            if(mediaPlayer.isPlaying()) {
-                                mediaPlayer.seekTo(0);
-                                mediaPlayer.pause();
+                                if(mediaPlayer.isPlaying()) {
+                                    mediaPlayer.seekTo(100);
+                                    mediaPlayer.pause();
+                                }
+                                return;
                             }
                             break;
                     }
                     try {
                         Thread.sleep(100);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        if(mediaPlayer.isPlaying()) {
+                            mediaPlayer.seekTo(100);
+                            mediaPlayer.pause();
+                        }
+                        return;
                     }
                 }
-                musicThread.interrupt();
-                //musicThreadAlive=false;
             }
         });
 
-        // this is different from the playSound() 'if' because
-        // this case runs when the thread runs till its termination
-        // and is not interrupted by musicThread
         musicThread.start();
-        if(musicThread != null) {
-            musicThread.interrupt();
-            musicThread=null;
-        }
+
+//        <everything below is void because thread becomes dead after it has finished>
+//        this is different from the playSound() 'if' because
+//        this case runs when the thread runs till its termination
+//        and is not interrupted by musicThread
+//        if(musicThread != null) {
+//            musicThread.interrupt();
+//            //musicThread=null;
+//        }
     }
 
     /**
-     * NOTE: Copied from stackoverflow
+     * NOTE: The hideKeyboard method has been copied from StackOverflow
      * this method hides keyboard when called.
      * @param activity
      */
@@ -426,7 +449,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * To release camera and media player resources
-     * When app is stopped. Otherwise ither apps will
+     * When app is stopped. Otherwise their apps will
      * not be able to utilize them.
      */
     @Override
