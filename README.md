@@ -4,7 +4,7 @@ MorseProbe is a native android app built in Android Studio. This app lets you pl
 
 ###App Interface
 
-![App screen](https://github.com/JSKohli/MorseProbe/Screenshots/Screenshot_20160811-221616.png "App Screen")
+![App screen](https://raw.githubusercontent.com/JSKohli/MorseProbe/Screenshots/Screenshot_20160811-221616.png "App Screen")
 
 ###App features
 * You can generate a morse code for any valid message.
