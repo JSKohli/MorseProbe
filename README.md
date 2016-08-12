@@ -4,7 +4,7 @@ MorseProbe is a native android app built in Android Studio. This app lets you pl
 
 ###App Interface
 
-<img src="https://raw.githubusercontent.com/JSKohli/MorseProbe/master/Screenshots/Screenshot_20160811-221616.png" alt="App Screen" width="200px")
+<img src="https://raw.githubusercontent.com/JSKohli/MorseProbe/master/Screenshots/Screenshot_20160811-221616.png" alt="App Screen" width="200px"/>
 
 <h1></h1>
 
